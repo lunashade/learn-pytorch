@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 """sample training code to learn PyTorch"""
+import csv
 import os
 import time
 
@@ -84,9 +85,31 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=1e-3, momentum=0.9)
 
 
+class CSVWriter(object):
+    def __init__(self, filename, *args):
+        self.filename = filename
+        self.header = args
+        if not os.path.isfile(filename):
+            with open(filename, 'w') as fp:
+                writer = csv.writer(fp)
+                writer.writerow(self.header)
+
+    def write(self, **kwargs):
+        row = []
+        for column in self.header:
+            if column in kwargs:
+                row.append(kwargs[column])
+            else:
+                row.append(None)
+        with open(self.filename, 'a') as fp:
+            writer = csv.writer(fp)
+            writer.writerow(row)
+
+
 # training loop
 epochs = 3
 t_start = time.time()
+csvwriter = CSVWriter('loss.csv', 'epoch', 'iteration', 'loss', 'elapsed_time')
 for epoch in range(epochs):
     running_loss = 0.0
     for i, (inputs, labels) in enumerate(train_loader):
@@ -100,12 +123,15 @@ for epoch in range(epochs):
         # print loss for each 100 iter.
         running_loss += loss.item()
         if i % 100 == 0:
+            loss_to_log = running_loss/100
+            elapsed_time = time.time() - t_start
             print(
                 "epoch:", epoch,
                 "iter:", i,
-                "loss:", running_loss/100,
-                "elapsed time:", time.time() - t_start
+                "loss:", loss_to_log,
+                "elapsed time:", elapsed_time,
             )
+            csvwriter.write(epoch=epoch, iteration=i, loss=loss_to_log, elapsed_time=elapsed_time)
             running_loss = 0.0
 
 print("Finish Training.")
