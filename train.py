@@ -55,12 +55,19 @@ n_class = 10
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(H*W*C, 128)
+        self.conv1 = nn.Conv2d(C, 128, 3, stride=2, padding=1)
+        self.conv2 = nn.Conv2d(128, 128, 3, stride=2, padding=1)
+        self.fc1 = nn.Linear(H//4 * W//4 * 128, 128)
         self.fc2 = nn.Linear(128, 128)
         self.fc3 = nn.Linear(128, n_class)
 
     def forward(self, x):
-        x = x.view(-1, H*W*C)
+        # H x W
+        x = F.relu(self.conv1(x))
+        # H/2 x W/2
+        x = F.relu(self.conv2(x))
+        # H/4 x W/4
+        x = x.view(-1, H//4 * W//4 * 128)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
