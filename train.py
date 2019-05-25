@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
 """sample training code to learn PyTorch"""
+import os
 
 import torch
 import torchvision
 from torch import nn, optim
 from torch.nn import functional as F
 from torchvision import transforms
+
+# GPU setting
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # dataset
 train_dataset = torchvision.datasets.MNIST(
@@ -61,6 +66,7 @@ class Net(nn.Module):
 
 
 net = Net()
+net.to(device)
 print(net)
 
 
@@ -74,6 +80,7 @@ epochs = 3
 for epoch in range(epochs):
     running_loss = 0.0
     for i, (inputs, labels) in enumerate(train_loader):
+        inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, labels)
@@ -94,6 +101,7 @@ total = 0
 
 with torch.no_grad():
     for (inputs, labels) in test_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
         outputs = net(inputs)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
