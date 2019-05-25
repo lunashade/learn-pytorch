@@ -2,6 +2,7 @@
 
 """sample training code to learn PyTorch"""
 import os
+import time
 
 import torch
 import torchvision
@@ -12,6 +13,7 @@ from torchvision import transforms
 # GPU setting
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print("device:", device)
 
 # dataset
 train_dataset = torchvision.datasets.MNIST(
@@ -77,6 +79,7 @@ optimizer = optim.SGD(net.parameters(), lr=1e-3, momentum=0.9)
 
 # training loop
 epochs = 3
+t_start = time.time()
 for epoch in range(epochs):
     running_loss = 0.0
     for i, (inputs, labels) in enumerate(train_loader):
@@ -90,7 +93,12 @@ for epoch in range(epochs):
         # print loss for each 100 iter.
         running_loss += loss.item()
         if i % 100 == 0:
-            print("epoch:", epoch, "iter:", i, "loss:", running_loss/100)
+            print(
+                "epoch:", epoch,
+                "iter:", i,
+                "loss:", running_loss/100,
+                "elapsed time:", time.time() - t_start
+            )
             running_loss = 0.0
 
 print("Finish Training.")
