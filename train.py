@@ -1,109 +1,26 @@
 #!/usr/bin/env python3
 
 """sample training code to learn PyTorch"""
-import csv
-import os
 import time
 
 import torch
-import torchvision
 from torch import nn, optim
-from torch.nn import functional as F
-from torchvision import transforms
+
+from .data_mnist import params, test_loader, train_loader
+from .model import Net
+from .utils import CSVWriter
 
 # GPU setting
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device:", device)
 
-# dataset
-train_dataset = torchvision.datasets.MNIST(
-    'data/',
-    train=True,
-    transform=transforms.ToTensor(),
-    download=True,
-)
-test_dataset = torchvision.datasets.MNIST(
-    'data/',
-    train=False,
-    transform=transforms.ToTensor(),
-)
 
-print("train dataset length:", len(train_dataset))
-print("test dataset length:", len(test_dataset))
-
-# data loaders
-train_batchsize = 100
-train_loader = torch.utils.data.DataLoader(
-    train_dataset,
-    batch_size=train_batchsize,
-    shuffle=True,
-    num_workers=2,
-)
-test_loader = torch.utils.data.DataLoader(
-    test_dataset,
-    batch_size=100,
-    shuffle=False,
-    num_workers=2,
-)
-
-# dataset specific parameters
-H, W, C = 28, 28, 1
-n_class = 10
-
-
-# model
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(C, 128, 3, stride=2, padding=1)
-        self.conv2 = nn.Conv2d(128, 128, 3, stride=2, padding=1)
-        self.fc1 = nn.Linear(H//4 * W//4 * 128, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, n_class)
-
-    def forward(self, x):
-        # H x W
-        x = F.relu(self.conv1(x))
-        # H/2 x W/2
-        x = F.relu(self.conv2(x))
-        # H/4 x W/4
-        x = x.view(-1, H//4 * W//4 * 128)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-
-net = Net()
+# model and loss function
+net = Net(**params)
 net.to(device)
 print(net)
-
-
-# loss function
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=1e-3, momentum=0.9)
-
-
-class CSVWriter(object):
-    def __init__(self, filename, *args):
-        self.filename = filename
-        self.header = args
-        if not os.path.isfile(filename):
-            with open(filename, 'w') as fp:
-                writer = csv.writer(fp)
-                writer.writerow(self.header)
-
-    def write(self, **kwargs):
-        row = []
-        for column in self.header:
-            if column in kwargs:
-                row.append(kwargs[column])
-            else:
-                row.append(None)
-        with open(self.filename, 'a') as fp:
-            writer = csv.writer(fp)
-            writer.writerow(row)
 
 
 # training loop
